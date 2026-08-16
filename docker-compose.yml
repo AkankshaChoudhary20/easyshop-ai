@@ -1,0 +1,45 @@
+# EasyShop AI — Next.js app + Postgres + Claude. Two services only — no
+# Terraform/EKS/Jenkins/ArgoCD/nginx-ingress/cert-manager (see README).
+#
+#   browser ──▶ app (Next.js, :3000) ──▶ postgres
+#                    │
+#                    └──▶ api.anthropic.com
+#
+# Bring it up:  docker compose up --build
+# Then open:    http://localhost:3000  (APP_HOST_PORT)
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./init/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    ports:
+      - "${POSTGRES_HOST_PORT}:5432"
+
+  app:
+    build: .
+    image: easyshop-ai:${IMAGE_TAG:-latest}
+    environment:
+      DATABASE_URL: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}"
+      JWT_SECRET: "${JWT_SECRET}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-claude-opus-5}"
+      ANTHROPIC_TIMEOUT_SECONDS: "${ANTHROPIC_TIMEOUT_SECONDS:-20}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "${APP_HOST_PORT}:3000"
+
+volumes:
+  pgdata:
