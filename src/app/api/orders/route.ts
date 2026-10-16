@@ -51,18 +51,18 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const items: { productId: number; quantity: number }[] = Array.isArray(body?.items)
-    ? body.items.filter(
-        (i: unknown): i is { productId: number; quantity: number } =>
-          !!i &&
-          typeof (i as { productId?: unknown }).productId === "number" &&
-          typeof (i as { quantity?: unknown }).quantity === "number" &&
-          (i as { quantity: number }).quantity > 0,
-      )
-    : [];
-  if (items.length === 0) {
-    return NextResponse.json({ error: "items is required and must be non-empty" }, { status: 400 });
+  const validItem = (item: unknown): item is {productId: number; quantity: number} => {
+    if (!item || typeof item !== "object") return false;
+    const candidate = item as {productId?: unknown; quantity?: unknown};
+    return typeof candidate.productId === "number" && Number.isInteger(candidate.productId)
+      && candidate.productId > 0 && candidate.productId <= 2147483647
+      && typeof candidate.quantity === "number" && Number.isInteger(candidate.quantity)
+      && candidate.quantity > 0 && candidate.quantity <= 2147483647;
+  };
+  if (!Array.isArray(body?.items) || body.items.length === 0 || !body.items.every(validItem)) {
+    return NextResponse.json({error: "Every cart item must have a positive integer productId and quantity."}, {status: 400});
   }
+  const items: {productId: number; quantity: number}[] = body.items;
 
   const pool = getPool();
   const client = await pool.connect();
