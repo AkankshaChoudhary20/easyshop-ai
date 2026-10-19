@@ -9,10 +9,11 @@ export function normalizePriceRange(
   minPrice: number | null,
   maxPrice: number | null,
 ): [number | null, number | null] {
-  let min = typeof minPrice === "number" && minPrice >= 0 ? minPrice : null;
-  let max = typeof maxPrice === "number" && maxPrice >= 0 ? maxPrice : null;
+  let min = typeof minPrice === "number" && Number.isFinite(minPrice) && minPrice >= 0 ? minPrice : null;
+  let max = typeof maxPrice === "number" && Number.isFinite(maxPrice) && maxPrice >= 0 ? maxPrice : null;
   if (min !== null && max !== null && min > max) {
     [min, max] = [max, min];
   }
   return [min, max];
 }
+
