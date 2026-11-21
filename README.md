@@ -69,6 +69,16 @@ make reset     # wipe the database and start fresh
 make smoke     # quick check that everything (including AI wiring) works
 ```
 
+To check the app and list the catalog before trying AI features:
+
+```bash
+curl -fsS http://localhost:3000/api/health
+curl -fsS http://localhost:3000/api/products
+```
+
+The health response reports `ai_enabled`. If it is false after setting
+`ANTHROPIC_API_KEY`, rerun `make up` to apply the updated environment.
+
 ## The API
 
 | Method | Path | What it does |
